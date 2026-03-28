@@ -2,8 +2,8 @@
 
 A Claude Code plugin that shows what's happening — context usage, active tools, running agents, and todo progress. Always visible below your input.
 
-[![License](https://img.shields.io/github/license/jarrodwatts/claude-hud?v=2)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/jarrodwatts/claude-hud)](https://github.com/jarrodwatts/claude-hud/stargazers)
+[![License](https://img.shields.io/github/license/gyuha/claude-hud?v=2)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/gyuha/claude-hud)](https://github.com/gyuha/claude-hud/stargazers)
 
 ![Claude HUD in action](claude-hud-preview-5-2.png)
 
@@ -11,12 +11,7 @@ A Claude Code plugin that shows what's happening — context usage, active tools
 
 Inside a Claude Code instance, run the following commands:
 
-**Step 1: Add the marketplace**
-```
-/plugin marketplace add jarrodwatts/claude-hud
-```
-
-**Step 2: Install the plugin**
+**Step 1: Install the plugin from GitHub**
 
 <details>
 <summary><strong>⚠️ Linux users: Click here first</strong></summary>
@@ -36,10 +31,10 @@ Then run the install command below in that session. This is a [Claude Code platf
 </details>
 
 ```
-/plugin install claude-hud
+/plugin install gyuha/claude-hud
 ```
 
-**Step 3: Configure the statusline**
+**Step 2: Configure the statusline**
 ```
 /claude-hud:setup
 ```
@@ -292,7 +287,7 @@ To disable, set `display.showUsage` to `false`.
 ## Development
 
 ```bash
-git clone https://github.com/jarrodwatts/claude-hud
+git clone https://github.com/gyuha/claude-hud
 cd claude-hud
 npm ci && npm run build
 npm test
@@ -310,4 +305,4 @@ MIT — see [LICENSE](LICENSE)
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=jarrodwatts/claude-hud&type=Date)](https://star-history.com/#jarrodwatts/claude-hud&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=gyuha/claude-hud&type=Date)](https://star-history.com/#gyuha/claude-hud&Date)
