@@ -51,6 +51,8 @@ export interface TodoItem {
     status: 'pending' | 'in_progress' | 'completed';
 }
 export interface UsageData {
+    source?: 'glm';
+    label?: string;
     fiveHour: number | null;
     sevenDay: number | null;
     fiveHourResetAt: Date | null;

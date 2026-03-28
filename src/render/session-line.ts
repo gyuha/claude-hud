@@ -142,7 +142,7 @@ export function renderSessionLine(ctx: RenderContext): string {
   }
 
   // Usage limits display (shown when enabled in config, respects usageThreshold)
-  if (display?.showUsage !== false && ctx.usageData && !providerLabel) {
+  if (display?.showUsage !== false && ctx.usageData && !shouldHideUsageForProvider(providerLabel, ctx.usageData)) {
     if (isLimitReached(ctx.usageData)) {
       const resetTime = ctx.usageData.fiveHour === 100
         ? formatResetTime(ctx.usageData.fiveHourResetAt)
@@ -156,7 +156,17 @@ export function renderSessionLine(ctx: RenderContext): string {
 
       if (effectiveUsage >= usageThreshold) {
         const usageBarEnabled = display?.usageBarEnabled ?? true;
-        if (fiveHour === null && sevenDay !== null) {
+        if (ctx.usageData.source === 'glm') {
+          const usageLabel = label(ctx.usageData.label ?? 'GLM', colors);
+          const singleUsagePart = formatSingleUsagePart({
+            percent: fiveHour ?? sevenDay,
+            resetAt: ctx.usageData.fiveHourResetAt ?? ctx.usageData.sevenDayResetAt,
+            colors,
+            usageBarEnabled,
+            barWidth,
+          });
+          parts.push(`${usageLabel} ${singleUsagePart}`);
+        } else if (fiveHour === null && sevenDay !== null) {
           const weeklyOnlyPart = formatUsageWindowPart({
             label: '7d',
             percent: sevenDay,
@@ -233,6 +243,17 @@ export function renderSessionLine(ctx: RenderContext): string {
   return line;
 }
 
+function shouldHideUsageForProvider(
+  providerLabel: string | null,
+  usageData: RenderContext['usageData'],
+): boolean {
+  if (!providerLabel || !usageData) {
+    return false;
+  }
+
+  return usageData.source !== 'glm';
+}
+
 function formatTokens(n: number): string {
   if (n >= 1000000) {
     return `${(n / 1000000).toFixed(1)}M`;
@@ -306,6 +327,31 @@ function formatUsageWindowPart({
   return reset
     ? `${label}: ${usageDisplay} (${reset})`
     : `${label}: ${usageDisplay}`;
+}
+
+function formatSingleUsagePart({
+  percent,
+  resetAt,
+  colors,
+  usageBarEnabled,
+  barWidth,
+}: {
+  percent: number | null;
+  resetAt: Date | null;
+  colors?: RenderContext['config']['colors'];
+  usageBarEnabled: boolean;
+  barWidth: number;
+}): string {
+  const usageDisplay = formatUsagePercent(percent, colors);
+  const reset = formatResetTime(resetAt);
+
+  if (usageBarEnabled) {
+    return reset
+      ? `${quotaBar(percent ?? 0, barWidth, colors)} ${usageDisplay} (${reset})`
+      : `${quotaBar(percent ?? 0, barWidth, colors)} ${usageDisplay}`;
+  }
+
+  return reset ? `${usageDisplay} (${reset})` : usageDisplay;
 }
 
 function formatResetTime(resetAt: Date | null): string {

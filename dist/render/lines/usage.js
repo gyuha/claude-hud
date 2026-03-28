@@ -11,10 +11,10 @@ export function renderUsageLine(ctx) {
     if (!ctx.usageData) {
         return null;
     }
-    if (getProviderLabel(ctx.stdin)) {
+    if (shouldHideUsageForProvider(getProviderLabel(ctx.stdin), ctx.usageData)) {
         return null;
     }
-    const usageLabel = label('Usage', colors);
+    const usageLabel = label(ctx.usageData.label ?? 'Usage', colors);
     if (isLimitReached(ctx.usageData)) {
         const resetTime = ctx.usageData.fiveHour === 100
             ? formatResetTime(ctx.usageData.fiveHourResetAt)
@@ -31,6 +31,15 @@ export function renderUsageLine(ctx) {
     const usageBarEnabled = display?.usageBarEnabled ?? true;
     const sevenDayThreshold = display?.sevenDayThreshold ?? 80;
     const barWidth = getAdaptiveBarWidth();
+    if (ctx.usageData.source === 'glm') {
+        return `${usageLabel} ${formatSingleUsagePart({
+            percent: fiveHour ?? sevenDay,
+            resetAt: ctx.usageData.fiveHourResetAt ?? ctx.usageData.sevenDayResetAt,
+            colors,
+            usageBarEnabled,
+            barWidth,
+        })}`;
+    }
     if (fiveHour === null && sevenDay !== null) {
         const weeklyOnlyPart = formatUsageWindowPart({
             label: '7d',
@@ -64,6 +73,12 @@ export function renderUsageLine(ctx) {
     }
     return `${usageLabel} ${fiveHourPart}`;
 }
+function shouldHideUsageForProvider(providerLabel, usageData) {
+    if (!providerLabel || !usageData) {
+        return false;
+    }
+    return usageData.source !== 'glm';
+}
 function formatUsagePercent(percent, colors) {
     if (percent === null) {
         return label('--', colors);
@@ -83,6 +98,16 @@ function formatUsageWindowPart({ label, percent, resetAt, colors, usageBarEnable
     return reset
         ? `${label}: ${usageDisplay} (resets in ${reset})`
         : `${label}: ${usageDisplay}`;
+}
+function formatSingleUsagePart({ percent, resetAt, colors, usageBarEnabled, barWidth, }) {
+    const usageDisplay = formatUsagePercent(percent, colors);
+    const reset = formatResetTime(resetAt);
+    if (usageBarEnabled) {
+        return reset
+            ? `${quotaBar(percent ?? 0, barWidth, colors)} ${usageDisplay} (resets in ${reset})`
+            : `${quotaBar(percent ?? 0, barWidth, colors)} ${usageDisplay}`;
+    }
+    return reset ? `${usageDisplay} (resets in ${reset})` : usageDisplay;
 }
 function formatResetTime(resetAt) {
     if (!resetAt)

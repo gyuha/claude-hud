@@ -57,6 +57,8 @@ export interface TodoItem {
 }
 
 export interface UsageData {
+  source?: 'glm';
+  label?: string;
   fiveHour: number | null;  // 0-100 percentage, null if unavailable
   sevenDay: number | null;  // 0-100 percentage, null if unavailable
   fiveHourResetAt: Date | null;

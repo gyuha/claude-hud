@@ -15,6 +15,9 @@ import { renderIdentityLine } from '../dist/render/lines/identity.js';
 import { renderEnvironmentLine } from '../dist/render/lines/environment.js';
 import { getContextColor, getQuotaColor } from '../dist/render/colors.js';
 
+delete process.env.ANTHROPIC_BASE_URL;
+delete process.env.ANTHROPIC_AUTH_TOKEN;
+
 function stripAnsi(str) {
   // eslint-disable-next-line no-control-regex
   return str.replace(/\x1b\[[0-9;]*m/g, '');
@@ -884,6 +887,35 @@ test('renderSessionLine shows Bedrock label and hides usage for bedrock model id
   assert.ok(!line.includes('5h:'), 'should hide usage display');
 });
 
+test('renderSessionLine shows GLM label and usage for api.z.ai sessions', () => {
+  const savedBaseUrl = process.env.ANTHROPIC_BASE_URL;
+
+  try {
+    process.env.ANTHROPIC_BASE_URL = 'https://api.z.ai/api/anthropic';
+    const ctx = baseContext();
+    ctx.config.display.usageBarEnabled = false;
+    ctx.usageData = {
+      source: 'glm',
+      label: 'GLM',
+      fiveHour: 23,
+      sevenDay: null,
+      fiveHourResetAt: null,
+      sevenDayResetAt: null,
+    };
+
+    const line = stripAnsi(renderSessionLine(ctx));
+    assert.ok(line.includes('GLM'), `should include GLM label: ${line}`);
+    assert.ok(line.includes('23%'), `should include GLM usage percentage: ${line}`);
+    assert.ok(!line.includes('5h:'), `should avoid Claude-specific 5h label for GLM: ${line}`);
+  } finally {
+    if (savedBaseUrl === undefined) {
+      delete process.env.ANTHROPIC_BASE_URL;
+    } else {
+      process.env.ANTHROPIC_BASE_URL = savedBaseUrl;
+    }
+  }
+});
+
 test('renderSessionLine displays usage percentages (7d hidden when low)', () => {
   const ctx = baseContext();
   ctx.config.display.sevenDayThreshold = 80;
@@ -1055,6 +1087,34 @@ test('renderUsageLine shows weekly-only usage without a ghost 5h section', () =>
   assert.ok(line.includes('7d:'), `should render the weekly window when it is the only usage value: ${line}`);
   assert.ok(line.includes('13%'), `should render the weekly percentage: ${line}`);
   assert.ok(!line.includes('|'), `should not render a separator for a missing 5h window: ${line}`);
+});
+
+test('renderUsageLine shows GLM usage without Claude window labels', () => {
+  const savedBaseUrl = process.env.ANTHROPIC_BASE_URL;
+
+  try {
+    process.env.ANTHROPIC_BASE_URL = 'https://api.z.ai/api/anthropic';
+    const ctx = baseContext();
+    ctx.config.display.usageBarEnabled = false;
+    ctx.usageData = {
+      source: 'glm',
+      label: 'GLM',
+      fiveHour: 64,
+      sevenDay: null,
+      fiveHourResetAt: null,
+      sevenDayResetAt: null,
+    };
+
+    const line = stripAnsi(renderUsageLine(ctx));
+    assert.ok(line.includes('GLM 64%'), `should render GLM usage label and percentage: ${line}`);
+    assert.ok(!line.includes('5h:'), `should avoid Claude-specific 5h label for GLM: ${line}`);
+  } finally {
+    if (savedBaseUrl === undefined) {
+      delete process.env.ANTHROPIC_BASE_URL;
+    } else {
+      process.env.ANTHROPIC_BASE_URL = savedBaseUrl;
+    }
+  }
 });
 
 test('renderSessionLine displays limit reached warning', () => {

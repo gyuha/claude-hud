@@ -2,6 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { formatSessionDuration, main } from '../dist/index.js';
 
+delete process.env.ANTHROPIC_BASE_URL;
+delete process.env.ANTHROPIC_AUTH_TOKEN;
+
 test('formatSessionDuration returns empty string without session start', () => {
   assert.equal(formatSessionDuration(undefined, () => 0), '');
 });

@@ -6,8 +6,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { _setCreateReadStreamForTests, parseTranscript } from '../dist/transcript.js';
 import { countConfigs } from '../dist/config-reader.js';
-import { getContextPercent, getBufferedPercent, getModelName, getProviderLabel, getUsageFromStdin, isBedrockModelId } from '../dist/stdin.js';
+import { _setGlmUsageGetterForTests, getContextPercent, getBufferedPercent, getModelName, getProviderLabel, getUsageFromStdin, isBedrockModelId, isGlmBaseUrl } from '../dist/stdin.js';
 import * as fs from 'node:fs';
+
+delete process.env.ANTHROPIC_BASE_URL;
+delete process.env.ANTHROPIC_AUTH_TOKEN;
 
 function restoreEnvVar(name, value) {
   if (value === undefined) {
@@ -215,13 +218,13 @@ test('native percentage falls back when NaN', () => {
   assert.equal(percent, 28); // falls back to raw calculation
 });
 
-test('getUsageFromStdin returns null when rate_limits are missing', () => {
-  assert.equal(getUsageFromStdin({}), null);
-  assert.equal(getUsageFromStdin({ rate_limits: null }), null);
+test('getUsageFromStdin returns null when rate_limits are missing', async () => {
+  assert.equal(await getUsageFromStdin({}), null);
+  assert.equal(await getUsageFromStdin({ rate_limits: null }), null);
 });
 
-test('getUsageFromStdin parses official Claude Code rate_limits payload', () => {
-  const usage = getUsageFromStdin({
+test('getUsageFromStdin parses official Claude Code rate_limits payload', async () => {
+  const usage = await getUsageFromStdin({
     rate_limits: {
       five_hour: {
         used_percentage: 7.999999999,
@@ -242,8 +245,8 @@ test('getUsageFromStdin parses official Claude Code rate_limits payload', () => 
   });
 });
 
-test('getUsageFromStdin rejects invalid fields and keeps only official usage data', () => {
-  const usage = getUsageFromStdin({
+test('getUsageFromStdin rejects invalid fields and keeps only official usage data', async () => {
+  const usage = await getUsageFromStdin({
     rate_limits: {
       five_hour: {
         used_percentage: -10,
@@ -281,6 +284,55 @@ test('bedrock model detection recognizes bedrock ids', () => {
   assert.equal(isBedrockModelId('claude-3-5-sonnet-20241022'), false);
   assert.equal(getProviderLabel({ model: { id: 'anthropic.claude-3-5-sonnet-20240620-v1:0' } }), 'Bedrock');
   assert.equal(getProviderLabel({ model: { id: 'claude-3-5-sonnet-20241022' } }), null);
+});
+
+test('GLM base URL detection and provider label use ANTHROPIC_BASE_URL', () => {
+  const savedBaseUrl = process.env.ANTHROPIC_BASE_URL;
+
+  try {
+    process.env.ANTHROPIC_BASE_URL = 'https://api.z.ai/api/anthropic';
+    assert.equal(isGlmBaseUrl(process.env.ANTHROPIC_BASE_URL), true);
+    assert.equal(getProviderLabel({ model: { id: 'claude-sonnet-4-20250514' } }), 'GLM');
+  } finally {
+    restoreEnvVar('ANTHROPIC_BASE_URL', savedBaseUrl);
+  }
+});
+
+test('getUsageFromStdin prefers GLM usage when api.z.ai is configured', async () => {
+  const savedBaseUrl = process.env.ANTHROPIC_BASE_URL;
+  const savedApiKey = process.env.ANTHROPIC_API_KEY;
+
+  try {
+    process.env.ANTHROPIC_BASE_URL = 'https://api.z.ai/api/anthropic';
+    process.env.ANTHROPIC_API_KEY = 'test-token';
+    _setGlmUsageGetterForTests(async () => ({
+      source: 'glm',
+      label: 'GLM',
+      fiveHour: 42,
+      sevenDay: null,
+      fiveHourResetAt: null,
+      sevenDayResetAt: null,
+    }));
+
+    const usage = await getUsageFromStdin({
+      rate_limits: {
+        five_hour: { used_percentage: 5, resets_at: 1710000000 },
+      },
+    });
+
+    assert.deepEqual(usage, {
+      source: 'glm',
+      label: 'GLM',
+      fiveHour: 42,
+      sevenDay: null,
+      fiveHourResetAt: null,
+      sevenDayResetAt: null,
+    });
+  } finally {
+    _setGlmUsageGetterForTests(null);
+    restoreEnvVar('ANTHROPIC_BASE_URL', savedBaseUrl);
+    restoreEnvVar('ANTHROPIC_API_KEY', savedApiKey);
+  }
 });
 
 test('parseTranscript aggregates tools, agents, and todos', async () => {

@@ -1,5 +1,8 @@
 import type { StdinData, UsageData } from './types.js';
 import { AUTOCOMPACT_BUFFER_PERCENT } from './constants.js';
+import { getGlmUsageData } from './glm-usage.js';
+
+let getGlmUsageDataImpl: typeof getGlmUsageData = getGlmUsageData;
 
 export async function readStdin(): Promise<StdinData | null> {
   if (process.stdin.isTTY) {
@@ -112,10 +115,18 @@ export function isBedrockModelId(modelId?: string): boolean {
 }
 
 export function getProviderLabel(stdin: StdinData): string | null {
+  if (isGlmBaseUrl(process.env.ANTHROPIC_BASE_URL)) {
+    return 'GLM';
+  }
+
   if (isBedrockModelId(stdin.model?.id)) {
     return 'Bedrock';
   }
   return null;
+}
+
+export function isGlmBaseUrl(baseUrl?: string): boolean {
+  return typeof baseUrl === 'string' && baseUrl.includes('api.z.ai');
 }
 
 function parseRateLimitPercent(value: number | null | undefined): number | null {
@@ -134,7 +145,11 @@ function parseRateLimitResetAt(value: number | null | undefined): Date | null {
   return new Date(value * 1000);
 }
 
-export function getUsageFromStdin(stdin: StdinData): UsageData | null {
+export async function getUsageFromStdin(stdin: StdinData): Promise<UsageData | null> {
+  if (isGlmBaseUrl(process.env.ANTHROPIC_BASE_URL)) {
+    return getGlmUsageDataImpl();
+  }
+
   const rateLimits = stdin.rate_limits;
   if (!rateLimits) {
     return null;
@@ -152,6 +167,10 @@ export function getUsageFromStdin(stdin: StdinData): UsageData | null {
     fiveHourResetAt: parseRateLimitResetAt(rateLimits.five_hour?.resets_at),
     sevenDayResetAt: parseRateLimitResetAt(rateLimits.seven_day?.resets_at),
   };
+}
+
+export function _setGlmUsageGetterForTests(impl: typeof getGlmUsageData | null): void {
+  getGlmUsageDataImpl = impl ?? getGlmUsageData;
 }
 
 function normalizeBedrockModelLabel(modelId: string): string | null {

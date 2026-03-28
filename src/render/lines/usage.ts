@@ -16,11 +16,11 @@ export function renderUsageLine(ctx: RenderContext): string | null {
     return null;
   }
 
-  if (getProviderLabel(ctx.stdin)) {
+  if (shouldHideUsageForProvider(getProviderLabel(ctx.stdin), ctx.usageData)) {
     return null;
   }
 
-  const usageLabel = label('Usage', colors);
+  const usageLabel = label(ctx.usageData.label ?? 'Usage', colors);
 
   if (isLimitReached(ctx.usageData)) {
     const resetTime = ctx.usageData.fiveHour === 100
@@ -41,6 +41,16 @@ export function renderUsageLine(ctx: RenderContext): string | null {
   const usageBarEnabled = display?.usageBarEnabled ?? true;
   const sevenDayThreshold = display?.sevenDayThreshold ?? 80;
   const barWidth = getAdaptiveBarWidth();
+
+  if (ctx.usageData.source === 'glm') {
+    return `${usageLabel} ${formatSingleUsagePart({
+      percent: fiveHour ?? sevenDay,
+      resetAt: ctx.usageData.fiveHourResetAt ?? ctx.usageData.sevenDayResetAt,
+      colors,
+      usageBarEnabled,
+      barWidth,
+    })}`;
+  }
 
   if (fiveHour === null && sevenDay !== null) {
     const weeklyOnlyPart = formatUsageWindowPart({
@@ -77,6 +87,17 @@ export function renderUsageLine(ctx: RenderContext): string | null {
   }
 
   return `${usageLabel} ${fiveHourPart}`;
+}
+
+function shouldHideUsageForProvider(
+  providerLabel: string | null,
+  usageData: RenderContext['usageData'],
+): boolean {
+  if (!providerLabel || !usageData) {
+    return false;
+  }
+
+  return usageData.source !== 'glm';
 }
 
 function formatUsagePercent(percent: number | null, colors?: RenderContext['config']['colors']): string {
@@ -117,6 +138,31 @@ function formatUsageWindowPart({
   return reset
     ? `${label}: ${usageDisplay} (resets in ${reset})`
     : `${label}: ${usageDisplay}`;
+}
+
+function formatSingleUsagePart({
+  percent,
+  resetAt,
+  colors,
+  usageBarEnabled,
+  barWidth,
+}: {
+  percent: number | null;
+  resetAt: Date | null;
+  colors?: RenderContext['config']['colors'];
+  usageBarEnabled: boolean;
+  barWidth: number;
+}): string {
+  const usageDisplay = formatUsagePercent(percent, colors);
+  const reset = formatResetTime(resetAt);
+
+  if (usageBarEnabled) {
+    return reset
+      ? `${quotaBar(percent ?? 0, barWidth, colors)} ${usageDisplay} (resets in ${reset})`
+      : `${quotaBar(percent ?? 0, barWidth, colors)} ${usageDisplay}`;
+  }
+
+  return reset ? `${usageDisplay} (resets in ${reset})` : usageDisplay;
 }
 
 function formatResetTime(resetAt: Date | null): string {

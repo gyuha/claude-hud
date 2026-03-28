@@ -1,4 +1,6 @@
 import { AUTOCOMPACT_BUFFER_PERCENT } from './constants.js';
+import { getGlmUsageData } from './glm-usage.js';
+let getGlmUsageDataImpl = getGlmUsageData;
 export async function readStdin() {
     if (process.stdin.isTTY) {
         return null;
@@ -92,10 +94,16 @@ export function isBedrockModelId(modelId) {
     return normalized.includes('anthropic.claude-');
 }
 export function getProviderLabel(stdin) {
+    if (isGlmBaseUrl(process.env.ANTHROPIC_BASE_URL)) {
+        return 'GLM';
+    }
     if (isBedrockModelId(stdin.model?.id)) {
         return 'Bedrock';
     }
     return null;
+}
+export function isGlmBaseUrl(baseUrl) {
+    return typeof baseUrl === 'string' && baseUrl.includes('api.z.ai');
 }
 function parseRateLimitPercent(value) {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -109,7 +117,10 @@ function parseRateLimitResetAt(value) {
     }
     return new Date(value * 1000);
 }
-export function getUsageFromStdin(stdin) {
+export async function getUsageFromStdin(stdin) {
+    if (isGlmBaseUrl(process.env.ANTHROPIC_BASE_URL)) {
+        return getGlmUsageDataImpl();
+    }
     const rateLimits = stdin.rate_limits;
     if (!rateLimits) {
         return null;
@@ -125,6 +136,9 @@ export function getUsageFromStdin(stdin) {
         fiveHourResetAt: parseRateLimitResetAt(rateLimits.five_hour?.resets_at),
         sevenDayResetAt: parseRateLimitResetAt(rateLimits.seven_day?.resets_at),
     };
+}
+export function _setGlmUsageGetterForTests(impl) {
+    getGlmUsageDataImpl = impl ?? getGlmUsageData;
 }
 function normalizeBedrockModelLabel(modelId) {
     if (!isBedrockModelId(modelId)) {

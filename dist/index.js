@@ -44,10 +44,9 @@ export async function main(overrides = {}) {
         const gitStatus = config.gitStatus.enabled
             ? await deps.getGitStatus(stdin.cwd)
             : null;
-        // Usage comes only from Claude Code's official stdin rate_limits fields.
         let usageData = null;
         if (config.display.showUsage !== false) {
-            usageData = deps.getUsageFromStdin(stdin);
+            usageData = await deps.getUsageFromStdin(stdin);
         }
         const extraCmd = deps.parseExtraCmdArg();
         const extraLabel = extraCmd ? await deps.runExtraCmd(extraCmd) : null;
