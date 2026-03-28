@@ -13,7 +13,13 @@ This repository is based on the original project at [jarrodwatts/claude-hud](htt
 
 Inside a Claude Code instance, run the following commands:
 
-**Step 1: Install the plugin from GitHub**
+**Step 1: Add the marketplace**
+
+```
+/plugin marketplace add gyuha/claude-hud
+```
+
+**Step 2: Install the plugin**
 
 <details>
 <summary><strong>⚠️ Linux users: Click here first</strong></summary>
@@ -33,10 +39,10 @@ Then run the install command below in that session. This is a [Claude Code platf
 </details>
 
 ```
-/plugin install gyuha/claude-hud
+/plugin install claude-hud@gyuha-claude-hud
 ```
 
-**Step 2: Configure the statusline**
+**Step 3: Configure the statusline**
 ```
 /claude-hud:setup
 ```
@@ -296,6 +302,20 @@ npm test
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Maintainer: upstream-sync skill
+
+This repository also includes a local maintainer skill at `skills/upstream-sync/` for safely reviewing and porting changes from the original upstream repository.
+
+Example prompts:
+
+```text
+Use the local upstream-sync skill to compare this fork against jarrodwatts/claude-hud and summarize what changed upstream since our current branch.
+
+Use the upstream-sync skill and review whether the latest upstream changes can be ported safely while preserving this fork's GLM support and gyuha/claude-hud install flow.
+
+Use the upstream-sync skill to make a safe sync plan for jarrodwatts/claude-hud, listing what should be ported manually, what should be left alone, and what verification commands need to run afterward.
+```
 
 ---
 
