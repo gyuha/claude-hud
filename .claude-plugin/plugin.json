@@ -1,7 +1,7 @@
 {
   "name": "claude-hud",
   "description": "Real-time statusline HUD for Claude Code - add GLM status",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "author": {
     "name": "Gyuha",
     "url": "https://github.com/gyuha"
