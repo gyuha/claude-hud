@@ -65,6 +65,13 @@ test('loadConfig returns valid config structure', async () => {
   }
 });
 
+test('default config shows weekly usage by default', () => {
+  assert.equal(DEFAULT_CONFIG.display.sevenDayThreshold, 0);
+
+  const config = mergeConfig({});
+  assert.equal(config.display.sevenDayThreshold, 0);
+});
+
 test('getConfigPath returns correct path', () => {
   const originalConfigDir = process.env.CLAUDE_CONFIG_DIR;
   delete process.env.CLAUDE_CONFIG_DIR;

@@ -1012,6 +1012,21 @@ test('renderSessionLine respects sevenDayThreshold override', () => {
   assert.ok(line.includes('7d:'), 'should include 7d when threshold is 0');
 });
 
+test('renderSessionLine shows 7d by default when sevenDayThreshold is unset', () => {
+  const ctx = baseContext();
+  delete ctx.config.display.sevenDayThreshold;
+  ctx.usageData = {
+    planName: 'Pro',
+    fiveHour: 10,
+    sevenDay: 5,
+    fiveHourResetAt: null,
+    sevenDayResetAt: null,
+  };
+
+  const line = renderSessionLine(ctx);
+  assert.ok(line.includes('7d:'), 'should include 7d when the default threshold is 0');
+});
+
 test('renderSessionLine shows weekly-only usage without a ghost 5h section', () => {
   const ctx = baseContext();
   ctx.config.display.sevenDayThreshold = 80;
