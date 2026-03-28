@@ -160,12 +160,26 @@ export function renderSessionLine(ctx: RenderContext): string {
           const usageLabel = label(ctx.usageData.label ?? 'GLM', colors);
           const singleUsagePart = formatSingleUsagePart({
             percent: fiveHour ?? sevenDay,
-            resetAt: ctx.usageData.fiveHourResetAt ?? ctx.usageData.sevenDayResetAt,
+            resetAt: ctx.usageData.fiveHourResetAt,
             colors,
             usageBarEnabled,
             barWidth,
           });
-          parts.push(`${usageLabel} ${singleUsagePart}`);
+
+          if (sevenDay !== null) {
+            const weeklyPart = formatUsageWindowPart({
+              label: '7d',
+              percent: sevenDay,
+              resetAt: ctx.usageData.sevenDayResetAt,
+              colors,
+              usageBarEnabled,
+              barWidth,
+              forceLabel: true,
+            });
+            parts.push(`${usageLabel} ${singleUsagePart} | ${weeklyPart}`);
+          } else {
+            parts.push(`${usageLabel} ${singleUsagePart}`);
+          }
         } else if (fiveHour === null && sevenDay !== null) {
           const weeklyOnlyPart = formatUsageWindowPart({
             label: '7d',

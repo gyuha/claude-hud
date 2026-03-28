@@ -916,6 +916,37 @@ test('renderSessionLine shows GLM label and usage for api.z.ai sessions', () => 
   }
 });
 
+test('renderSessionLine shows weekly GLM usage when a seven-day value exists', () => {
+  const savedBaseUrl = process.env.ANTHROPIC_BASE_URL;
+
+  try {
+    process.env.ANTHROPIC_BASE_URL = 'https://api.z.ai/api/anthropic';
+    const ctx = baseContext();
+    ctx.config.display.usageBarEnabled = false;
+    ctx.config.display.sevenDayThreshold = 0;
+    ctx.usageData = {
+      source: 'glm',
+      label: 'GLM',
+      fiveHour: 77,
+      sevenDay: 80,
+      fiveHourResetAt: null,
+      sevenDayResetAt: null,
+    };
+
+    const line = stripAnsi(renderSessionLine(ctx));
+    assert.ok(line.includes('GLM'), `should include GLM label: ${line}`);
+    assert.ok(line.includes('77%'), `should include overall GLM usage: ${line}`);
+    assert.ok(line.includes('7d:'), `should include weekly GLM usage label: ${line}`);
+    assert.ok(line.includes('80%'), `should include weekly GLM usage percentage: ${line}`);
+  } finally {
+    if (savedBaseUrl === undefined) {
+      delete process.env.ANTHROPIC_BASE_URL;
+    } else {
+      process.env.ANTHROPIC_BASE_URL = savedBaseUrl;
+    }
+  }
+});
+
 test('renderSessionLine displays usage percentages (7d hidden when low)', () => {
   const ctx = baseContext();
   ctx.config.display.sevenDayThreshold = 80;
@@ -1108,6 +1139,37 @@ test('renderUsageLine shows GLM usage without Claude window labels', () => {
     const line = stripAnsi(renderUsageLine(ctx));
     assert.ok(line.includes('GLM 64%'), `should render GLM usage label and percentage: ${line}`);
     assert.ok(!line.includes('5h:'), `should avoid Claude-specific 5h label for GLM: ${line}`);
+  } finally {
+    if (savedBaseUrl === undefined) {
+      delete process.env.ANTHROPIC_BASE_URL;
+    } else {
+      process.env.ANTHROPIC_BASE_URL = savedBaseUrl;
+    }
+  }
+});
+
+test('renderUsageLine shows weekly GLM usage when a seven-day value exists', () => {
+  const savedBaseUrl = process.env.ANTHROPIC_BASE_URL;
+
+  try {
+    process.env.ANTHROPIC_BASE_URL = 'https://api.z.ai/api/anthropic';
+    const ctx = baseContext();
+    ctx.config.display.usageBarEnabled = false;
+    ctx.config.display.sevenDayThreshold = 0;
+    ctx.usageData = {
+      source: 'glm',
+      label: 'GLM',
+      fiveHour: 77,
+      sevenDay: 80,
+      fiveHourResetAt: null,
+      sevenDayResetAt: null,
+    };
+
+    const line = stripAnsi(renderUsageLine(ctx));
+    assert.ok(line.includes('GLM'), `should render GLM label: ${line}`);
+    assert.ok(line.includes('77%'), `should render overall GLM usage: ${line}`);
+    assert.ok(line.includes('7d:'), `should include weekly GLM usage label: ${line}`);
+    assert.ok(line.includes('80%'), `should render weekly GLM usage percentage: ${line}`);
   } finally {
     if (savedBaseUrl === undefined) {
       delete process.env.ANTHROPIC_BASE_URL;

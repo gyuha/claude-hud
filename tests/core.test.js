@@ -309,9 +309,9 @@ test('getUsageFromStdin prefers GLM usage when api.z.ai is configured', async ()
       source: 'glm',
       label: 'GLM',
       fiveHour: 42,
-      sevenDay: null,
+      sevenDay: 18,
       fiveHourResetAt: null,
-      sevenDayResetAt: null,
+      sevenDayResetAt: new Date(1710600000 * 1000),
     }));
 
     const usage = await getUsageFromStdin({
@@ -324,9 +324,9 @@ test('getUsageFromStdin prefers GLM usage when api.z.ai is configured', async ()
       source: 'glm',
       label: 'GLM',
       fiveHour: 42,
-      sevenDay: null,
+      sevenDay: 18,
       fiveHourResetAt: null,
-      sevenDayResetAt: null,
+      sevenDayResetAt: new Date(1710600000 * 1000),
     });
   } finally {
     _setGlmUsageGetterForTests(null);

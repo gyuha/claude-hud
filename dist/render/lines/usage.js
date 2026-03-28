@@ -32,13 +32,26 @@ export function renderUsageLine(ctx) {
     const sevenDayThreshold = display?.sevenDayThreshold ?? 80;
     const barWidth = getAdaptiveBarWidth();
     if (ctx.usageData.source === 'glm') {
-        return `${usageLabel} ${formatSingleUsagePart({
+        const glmUsagePart = formatSingleUsagePart({
             percent: fiveHour ?? sevenDay,
-            resetAt: ctx.usageData.fiveHourResetAt ?? ctx.usageData.sevenDayResetAt,
+            resetAt: ctx.usageData.fiveHourResetAt,
             colors,
             usageBarEnabled,
             barWidth,
-        })}`;
+        });
+        if (sevenDay !== null) {
+            const weeklyPart = formatUsageWindowPart({
+                label: '7d',
+                percent: sevenDay,
+                resetAt: ctx.usageData.sevenDayResetAt,
+                colors,
+                usageBarEnabled,
+                barWidth,
+                forceLabel: true,
+            });
+            return `${usageLabel} ${glmUsagePart} | ${weeklyPart}`;
+        }
+        return `${usageLabel} ${glmUsagePart}`;
     }
     if (fiveHour === null && sevenDay !== null) {
         const weeklyOnlyPart = formatUsageWindowPart({
